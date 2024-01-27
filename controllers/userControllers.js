@@ -1,40 +1,24 @@
 const bcrypt = require("bcryptjs")
 const { generateToken } = require("../utils/jwtToken")
+const User = require("../models/userModel")
+const userModel = require("../models/userModel")
 
-const users = [
-    {
-        _id: 1,
-        fullName: 'test1',
-        email: 'test1@gmail.com',
-        password: '$2b$10$aUCF9VSgIccIzefhKqCVD.TYtEbCFBYGwUXRfzqdRQnGGCPUcxD6W'
-    },
-    {
-        _id: 2,
-        fullName: 'test2',
-        email: 'test2@gmail.com',
-        password: '$2b$10$tDKxGGl4RUofq3Jwp1OVXOxnbfcgCvwJpI2FClTDSUz26/nt6xEfK'
-    }
-]
 
 exports.registerUser = async (req, res) => {
-    const { fullName, email, password } = req.body
+    const { fullname, email, password } = req.body
     try {
         const hashPassword = await bcrypt.hash(password, 10)
-        const user = {
-            fullName,
-            email,
-            password: hashPassword
-        }
+        const newUser = await User.create({ fullname, email, password: hashPassword })
         res.status(200).json({
             success: true,
             message: "User register successfully",
             isAuthenticated: true,
-            user
+            user: newUser
         })
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: "Error registering user",
+            message: error.message,
             isAuthenticated: false
         })
     }
@@ -43,7 +27,7 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body
     try {
-        const user = users.find((u) => u.email === email)
+        const user = await userModel.findOne({ email })
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -64,13 +48,14 @@ exports.loginUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: "Error Login user",
+            message: error.message,
             isAuthenticated: false
         })
     }
 }
 
-exports.getAllUsers = (req, res) => {
+exports.getAllUsers = async (req, res) => {
+    const users = await userModel.find()
     res.status(200).json({
         success: true,
         data: users
